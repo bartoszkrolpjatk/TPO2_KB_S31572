@@ -15,6 +15,7 @@ import java.nio.charset.Charset;
 
 import static java.nio.channels.SelectionKey.OP_ACCEPT;
 import static java.nio.channels.SelectionKey.OP_READ;
+import static zad1.CleaningUtils.closeChannelAndSelector;
 
 public class ChatServer implements Runnable {
 
@@ -63,7 +64,7 @@ public class ChatServer implements Runnable {
                         while (bytesRead > 1) {
                             buffer.flip();
                             var charBuffer = Charset.forName("Cp1250").decode(buffer);
-//                            System.out.println(charBuffer);
+                            System.out.print(charBuffer);
                             buffer.clear();
                             bytesRead = channel.read(buffer);
                         }
@@ -75,14 +76,8 @@ public class ChatServer implements Runnable {
         } catch (IOException e) {
             throw new SimpleChatException.InternalServerError(e);
         } finally {
-            try {
-                selector.close();
-                serverChannel.close();
-            } catch (IOException e) {
-                throw new RuntimeException(e);//todo: wyjątek
-            }
+            closeChannelAndSelector(serverChannel, selector);
         }
-
     }
 
     public void startServer() {

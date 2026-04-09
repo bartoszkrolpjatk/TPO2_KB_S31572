@@ -37,4 +37,10 @@ abstract class SimpleChatException extends RuntimeException {
             super(message, cause);
         }
     }
+
+    static class CloseFailed extends SimpleChatException {
+        CloseFailed(Throwable cause) {
+            super("Exception while closing channel and selector %s".formatted(cause.getMessage()), cause);
+        }
+    }
 }
