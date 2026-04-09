@@ -1,5 +1,7 @@
 package zad1;
 
+import zad1.exception.SimpleChatException;
+
 import java.io.IOException;
 import java.nio.channels.Selector;
 import java.nio.channels.spi.AbstractInterruptibleChannel;

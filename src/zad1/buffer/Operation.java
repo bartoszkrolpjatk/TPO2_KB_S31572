@@ -1,16 +1,16 @@
-package zad1;
+package zad1.buffer;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 public enum Operation {
     LOGIN,
     LOGOUT,
     SEND;
 
-    public static Operation map(String operation) {
+    static Optional<Operation> map(String operation) {
         return Arrays.stream(Operation.values())
                 .filter(o -> o.toString().equalsIgnoreCase(operation))
-                .findFirst()
-                .orElseThrow(() -> new SimpleChatException.UnsupportedOperation(operation));
+                .findFirst();
     }
 }

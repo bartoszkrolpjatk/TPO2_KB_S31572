@@ -1,4 +1,7 @@
-package zad1;
+package zad1.buffer;
+
+import zad1.exception.checked.ConnectionClosedException;
+import zad1.exception.checked.InvalidMessageFormatException;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -9,16 +12,19 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 
+import static zad1.buffer.MessageValidator.validateMessageFormat;
+
 public class BufferService {
+
+    public static final String DELIMITER = ":";
 
     private final ByteBuffer buffer;
     private static final int BUFFER_CAPACITY = 1024;
     private static final CharsetDecoder decoder;
     private static final CharsetEncoder encoder;
 
-    private static final String DELIMITER = ":";
 
-    BufferService() {
+    public BufferService() {
         buffer = ByteBuffer.allocate(BUFFER_CAPACITY);
     }
 
@@ -32,12 +38,12 @@ public class BufferService {
         encoder = cp1250.newEncoder();
     }
 
-    public ReadResult readFromChannel(SocketChannel channel) throws IOException {//todo: po użyciu tej metody powinien być sprawdzany format wiadomości
+    public ReadResultDto readFromChannel(SocketChannel channel) throws IOException, ConnectionClosedException, InvalidMessageFormatException {
         buffer.clear();
         int bytesRead = channel.read(buffer);
 
         if (bytesRead == -1) {
-            return new ReadResult(null);
+            throw new ConnectionClosedException("Connection closed by the client!");
         }
 
         var data = new StringBuilder();
@@ -49,37 +55,10 @@ public class BufferService {
             bytesRead = channel.read(buffer);
         }
 
-        return new ReadResult(data);
+        return validateMessageFormat(data.toString());
     }
 
     public static ByteBuffer asBuffer(String message) throws CharacterCodingException {
         return encoder.encode(CharBuffer.wrap(message));
-    }
-
-    public static final class ReadResult {
-
-        private boolean connectionClosed;
-        private final StringBuilder data;
-        private Operation operation;
-
-        public ReadResult(StringBuilder data) {
-            this.data = data;
-            if (data != null) {
-                this.connectionClosed = true;
-                this.operation = Operation.map(data.toString().split(DELIMITER)[0]);
-            }
-        }
-
-        public boolean connectionClosed() {
-            return connectionClosed;
-        }
-
-        public StringBuilder data() {
-            return data;
-        }
-
-        public Operation operation() {
-            return operation;
-        }
     }
 }

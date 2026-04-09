@@ -4,15 +4,16 @@
 
 package zad1;
 
+import zad1.buffer.BufferService;
+import zad1.exception.SimpleChatException;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.SelectionKey;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.Charset;
 
 import static java.nio.channels.SelectionKey.OP_READ;
-import static java.nio.channels.SelectionKey.OP_WRITE;
 
 public class ChatClient {
 
@@ -21,7 +22,6 @@ public class ChatClient {
 
     private final SocketChannel channel;
     private final Selector selector;
-    private final SelectionKey key;
     private BroadcastListener broadcastListener;
 
     private static final String LOGIN_REQUEST = "hi:%s";
@@ -32,7 +32,6 @@ public class ChatClient {
             channel = SocketChannel.open(new InetSocketAddress(host, port));
             channel.configureBlocking(false);
             selector = Selector.open();
-            key = channel.register(selector, OP_WRITE);
             this.id = id;
         } catch (IOException e) {
             throw new SimpleChatException.ClientCannotConnect(e);
@@ -40,18 +39,21 @@ public class ChatClient {
     }
 
     public void send(String req) {
-        var buffer = Charset.forName("Cp1250").encode(req + '\n');//todo BufferService
         try {
-            channel.write(buffer);
+            channel.write(BufferService.asBuffer(req));
         } catch (IOException e) {
-            throw new RuntimeException(e);//todo: wyjątek
+            throw new SimpleChatException.SendingMessageFailed(e);
         }
     }
 
     public void login() {
-        send(LOGIN_REQUEST.formatted(id));
-        key.interestOps(key.interestOps() | OP_READ);
-        startListeningForBroadcast();
+        try {
+            send(LOGIN_REQUEST.formatted(id));
+            channel.register(selector, OP_READ);
+            startListeningForBroadcast();
+        } catch (ClosedChannelException e) {
+            throw new SimpleChatException.ClientCannotConnect(e);
+        }
     }
 
     public void logout() {

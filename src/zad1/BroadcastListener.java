@@ -1,5 +1,11 @@
 package zad1;
 
+import zad1.buffer.BufferService;
+import zad1.buffer.ReadResultDto;
+import zad1.exception.checked.ConnectionClosedException;
+import zad1.exception.checked.InvalidMessageFormatException;
+import zad1.exception.SimpleChatException;
+
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -35,16 +41,14 @@ public class BroadcastListener implements Runnable {
                     SelectionKey key = iterator.next();
                     iterator.remove();
                     if (key.isReadable()) {
-                        BufferService.ReadResult result = bufferService.readFromChannel(channel);
-                        if (result.connectionClosed()) {
-                            listeningToBroadcast = false;
-                            continue;
-                        }
-                        chatView.append(result.data());
+                        try {
+                            ReadResultDto result = bufferService.readFromChannel(channel);
+                            chatView.append(result.message());
+                        } catch (InvalidMessageFormatException ignored) { }
                     }
                 }
             }
-        } catch (IOException e) {
+        } catch (IOException | ConnectionClosedException e) {
             throw new SimpleChatException.ListeningToBroadcastFailed("For client %s. Exception while listening to broadcast: %s.".formatted(this, e.getMessage()));
         } finally {
             closeChannelAndSelector(channel, selector);
