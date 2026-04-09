@@ -23,7 +23,7 @@ import static java.nio.channels.SelectionKey.OP_READ;
 import static zad1.buffer.BufferService.asBuffer;
 import static zad1.CleaningUtils.closeChannelAndSelector;
 
-public class ChatServer implements Runnable {
+public class ChatServer implements Runnable {//todo: zwracanie błędów klientom
 
     private final ServerSocketChannel serverChannel;
     private final Selector selector;
@@ -72,11 +72,12 @@ public class ChatServer implements Runnable {
                         SocketChannel channel = (SocketChannel) key.channel();
                         try {
                             ReadResultDto result = bufferService.readFromChannel(channel);
+                            System.out.print(result);
                             switch (result.operation()) {
-                                case LOGIN -> {
+                                case HI -> {
                                     //todo: login
                                 }
-                                case LOGOUT -> {
+                                case BYE -> {
                                     //todo: logout
                                 }
                                 case SEND -> {
@@ -86,7 +87,9 @@ public class ChatServer implements Runnable {
                             //todo: aktualizuj serverLog
                         } catch (ConnectionClosedException e) {
                             //todo: wyloguj użytkownika
-                        } catch (InvalidMessageFormatException ignored) { }
+                        } catch (InvalidMessageFormatException e) {
+                            System.err.printf("Wrong message format. Cause: %s. Skipping...\n", e.getMessage());
+                        }
                     }
 
                     if (key.isWritable()) {

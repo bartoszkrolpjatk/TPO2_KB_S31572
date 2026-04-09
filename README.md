@@ -25,4 +25,3 @@ Serwer następnie wysyła wszystkim podłączonym klientom komunikat o przeprowa
    * wysłanie wiadomości: `send:<message>\n`
  * **Serwer**
    * zdarzenie: `broadcast:<message>\n`
-   * błąd: `error:<cause>\n`

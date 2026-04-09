@@ -26,6 +26,7 @@ public class ChatClient {
 
     private static final String LOGIN_REQUEST = "hi:%s";
     private static final String LOGOUT_REQUEST = "bye:%s";
+    private static final String SEND_REQUEST = "send:%s";
 
     public ChatClient(String host, int port, String id) {
         try {
@@ -35,14 +36,6 @@ public class ChatClient {
             this.id = id;
         } catch (IOException e) {
             throw new SimpleChatException.ClientCannotConnect(e);
-        }
-    }
-
-    public void send(String req) {
-        try {
-            channel.write(BufferService.asBuffer(req));
-        } catch (IOException e) {
-            throw new SimpleChatException.SendingMessageFailed(e);
         }
     }
 
@@ -59,6 +52,18 @@ public class ChatClient {
     public void logout() {
         send(LOGOUT_REQUEST.formatted(id));
         broadcastListener.interrupt();
+    }
+
+    public void sendMessage(String message) {
+        send(SEND_REQUEST.formatted(message));
+    }
+
+    public void send(String req) {
+        try {
+            channel.write(BufferService.asBuffer(req + '\n'));
+        } catch (IOException e) {
+            throw new SimpleChatException.SendingMessageFailed(e);
+        }
     }
 
     private void startListeningForBroadcast() {

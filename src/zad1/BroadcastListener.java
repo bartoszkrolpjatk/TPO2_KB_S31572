@@ -44,7 +44,9 @@ public class BroadcastListener implements Runnable {
                         try {
                             ReadResultDto result = bufferService.readFromChannel(channel);
                             chatView.append(result.message());
-                        } catch (InvalidMessageFormatException ignored) { }
+                        } catch (InvalidMessageFormatException e) {
+                            System.err.printf("[Client %s] Wrong message format. Cause: %s. Skipping...\n", this, e.getMessage());
+                        }
                     }
                 }
             }
