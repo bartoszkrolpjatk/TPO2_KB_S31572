@@ -71,24 +71,23 @@ public class ChatServer implements Runnable {//todo: zwracanie błędów kliento
                     if (key.isReadable()) {
                         SocketChannel channel = (SocketChannel) key.channel();
                         try {
-                            ReadResultDto result = bufferService.readFromChannel(channel);
-                            System.out.print(result);
-                            switch (result.operation()) {
-                                case HI -> {
-                                    //todo: login
+                            for (ReadResultDto result : bufferService.readFromChannel(channel)) {
+                                System.out.print(result);
+                                switch (result.operation()) {
+                                    case HI -> {
+                                        //todo: login
+                                    }
+                                    case BYE -> {
+                                        //todo: logout
+                                    }
+                                    case SEND -> {
+                                        //todo: send
+                                    }
                                 }
-                                case BYE -> {
-                                    //todo: logout
-                                }
-                                case SEND -> {
-                                    //todo: send
-                                }
+                                //todo: aktualizuj serverLog
                             }
-                            //todo: aktualizuj serverLog
                         } catch (ConnectionClosedException e) {
                             //todo: wyloguj użytkownika
-                        } catch (InvalidMessageFormatException e) {
-                            System.err.printf("Wrong message format. Cause: %s. Skipping...\n", e.getMessage());
                         }
                     }
 

@@ -11,6 +11,8 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
+import java.util.ArrayList;
+import java.util.List;
 
 import static zad1.buffer.MessageValidator.validateMessageFormat;
 
@@ -22,7 +24,6 @@ public class BufferService {
     private static final int BUFFER_CAPACITY = 1024;
     private static final CharsetDecoder decoder;
     private static final CharsetEncoder encoder;
-
 
     public BufferService() {
         buffer = ByteBuffer.allocate(BUFFER_CAPACITY);
@@ -38,7 +39,7 @@ public class BufferService {
         encoder = cp1250.newEncoder();
     }
 
-    public ReadResultDto readFromChannel(SocketChannel channel) throws IOException, ConnectionClosedException, InvalidMessageFormatException {
+    public List<ReadResultDto> readFromChannel(SocketChannel channel) throws IOException, ConnectionClosedException, InvalidMessageFormatException {
         buffer.clear();
         int bytesRead = channel.read(buffer);
 
@@ -47,7 +48,7 @@ public class BufferService {
         }
 
         var data = new StringBuilder();
-        while (bytesRead > 1) {
+        while (bytesRead > 0) {
             buffer.flip();
             var charBuffer = decoder.decode(buffer);
             data.append(charBuffer);
@@ -55,7 +56,16 @@ public class BufferService {
             bytesRead = channel.read(buffer);
         }
 
-        return validateMessageFormat(data.toString());
+        var rawMessages = data.toString().split("\n");
+        var result = new ArrayList<ReadResultDto>();
+        for (var rm : rawMessages) {
+            try {
+                result.add(validateMessageFormat(data.toString()));
+            } catch (InvalidMessageFormatException e) {
+                System.err.printf("Wrong message format. Cause: %s. Skipping...\n", e.getMessage());
+            }
+        }
+        return result;
     }
 
     public static ByteBuffer asBuffer(String message) throws CharacterCodingException {
