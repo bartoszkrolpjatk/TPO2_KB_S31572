@@ -2,19 +2,23 @@ package zad1;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 
-public class BufferReader {
+public class BufferService {
 
     private final ByteBuffer buffer;
     private static final int BUFFER_CAPACITY = 1024;
     private static final CharsetDecoder decoder;
     private static final CharsetEncoder encoder;
 
-    BufferReader() {
+    private static final String DELIMITER = ":";
+
+    BufferService() {
         buffer = ByteBuffer.allocate(BUFFER_CAPACITY);
     }
 
@@ -28,12 +32,12 @@ public class BufferReader {
         encoder = cp1250.newEncoder();
     }
 
-    public ReadResult readFromChannel(SocketChannel channel) throws IOException {
+    public ReadResult readFromChannel(SocketChannel channel) throws IOException {//todo: po użyciu tej metody powinien być sprawdzany format wiadomości
         buffer.clear();
         int bytesRead = channel.read(buffer);
 
         if (bytesRead == -1) {
-            return new ReadResult(true, null);
+            return new ReadResult(null);
         }
 
         var data = new StringBuilder();
@@ -45,8 +49,37 @@ public class BufferReader {
             bytesRead = channel.read(buffer);
         }
 
-        return new ReadResult(false, data);
+        return new ReadResult(data);
     }
 
-    public record ReadResult(boolean connectionClosed, StringBuilder data) { }
+    public static ByteBuffer asBuffer(String message) throws CharacterCodingException {
+        return encoder.encode(CharBuffer.wrap(message));
+    }
+
+    public static final class ReadResult {
+
+        private boolean connectionClosed;
+        private final StringBuilder data;
+        private Operation operation;
+
+        public ReadResult(StringBuilder data) {
+            this.data = data;
+            if (data != null) {
+                this.connectionClosed = true;
+                this.operation = Operation.map(data.toString().split(DELIMITER)[0]);
+            }
+        }
+
+        public boolean connectionClosed() {
+            return connectionClosed;
+        }
+
+        public StringBuilder data() {
+            return data;
+        }
+
+        public Operation operation() {
+            return operation;
+        }
+    }
 }

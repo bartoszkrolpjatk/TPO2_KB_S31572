@@ -9,7 +9,7 @@ import static zad1.CleaningUtils.closeChannelAndSelector;
 
 public class BroadcastListener implements Runnable {
 
-    private final BufferReader bufferReader;
+    private final BufferService bufferService;
     private final SocketChannel channel;
     private final Selector selector;
     private final StringBuilder chatView;
@@ -18,7 +18,7 @@ public class BroadcastListener implements Runnable {
 
     public BroadcastListener(SocketChannel channel, Selector selector, StringBuilder chatView) {
         this.channel = channel;
-        this.bufferReader = new BufferReader();
+        this.bufferService = new BufferService();
         this.selector = selector;
         this.chatView = chatView;
         this.listeningToBroadcast = false;
@@ -35,7 +35,7 @@ public class BroadcastListener implements Runnable {
                     SelectionKey key = iterator.next();
                     iterator.remove();
                     if (key.isReadable()) {
-                        BufferReader.ReadResult result = bufferReader.readFromChannel(channel);
+                        BufferService.ReadResult result = bufferService.readFromChannel(channel);
                         if (result.connectionClosed()) {
                             listeningToBroadcast = false;
                             continue;

@@ -43,4 +43,10 @@ abstract class SimpleChatException extends RuntimeException {
             super("Exception while closing channel and selector %s".formatted(cause.getMessage()), cause);
         }
     }
+
+    static class UnsupportedOperation extends SimpleChatException {
+        UnsupportedOperation(String unsupportedOperation) {
+            super("Unsupported operation: %s".formatted(unsupportedOperation));
+        }
+    }
 }

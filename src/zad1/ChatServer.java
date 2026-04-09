@@ -6,15 +6,15 @@ package zad1;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.Charset;
+import java.nio.charset.CharacterCodingException;
 
 import static java.nio.channels.SelectionKey.OP_ACCEPT;
 import static java.nio.channels.SelectionKey.OP_READ;
+import static zad1.BufferService.asBuffer;
 import static zad1.CleaningUtils.closeChannelAndSelector;
 
 public class ChatServer implements Runnable {
@@ -22,8 +22,9 @@ public class ChatServer implements Runnable {
     private final ServerSocketChannel serverChannel;
     private final Selector selector;
     private final Thread thread;
+    private final BufferService bufferService;
+    private final StringBuilder serverLog;
     private volatile boolean serverRunning = false;
-    private final ByteBuffer buffer = ByteBuffer.allocate(1024);
 
     public ChatServer(String host, int port) {
         try {
@@ -33,6 +34,8 @@ public class ChatServer implements Runnable {
             selector = Selector.open();
             serverChannel.register(selector, OP_ACCEPT);
             thread = new Thread(this);
+            bufferService = new BufferService();
+            serverLog = new StringBuilder();
         } catch (IOException e) {
             throw new SimpleChatException.ServerStartFailed(e);
         }
@@ -58,16 +61,26 @@ public class ChatServer implements Runnable {
                         newClientChannel.register(selector, OP_READ);
                     } else if (key.isReadable()) {
                         SocketChannel channel = (SocketChannel) key.channel();
-                        buffer.clear();
-                        int bytesRead = channel.read(buffer);
-
-                        while (bytesRead > 1) {
-                            buffer.flip();
-                            var charBuffer = Charset.forName("Cp1250").decode(buffer);
-                            System.out.print(charBuffer);
-                            buffer.clear();
-                            bytesRead = channel.read(buffer);
+                        BufferService.ReadResult result = bufferService.readFromChannel(channel);
+                        if (result.connectionClosed()) {
+                            //todo: wyloguj użytkownika
+                            continue;
                         }
+
+                        switch (result.operation()) {
+                            case LOGIN -> {
+                                //todo: login
+                            }
+                            case LOGOUT -> {
+                                //todo: logout
+                            }
+                            case SEND -> {
+                                //todo: send
+                            }
+                        }
+                        serverLog.append(result.data());
+
+
                     } else if (key.isWritable()) {
 
                     }
@@ -91,6 +104,15 @@ public class ChatServer implements Runnable {
     }
 
     public String getServerLog() {
-        return "Server log test";
+        return serverLog.toString();
+    }
+
+    private void broadcast(String message) throws CharacterCodingException {
+        var iterator = selector.keys().iterator();
+        while (iterator.hasNext()) {
+            SelectionKey key = iterator.next();
+            var session = (UserSessionDto) key.attachment();
+            session.addToOutputQueue(asBuffer(message));
+        }
     }
 }

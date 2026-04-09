@@ -40,7 +40,7 @@ public class ChatClient {
     }
 
     public void send(String req) {
-        var buffer = Charset.forName("Cp1250").encode(req + '\n');
+        var buffer = Charset.forName("Cp1250").encode(req + '\n');//todo BufferService
         try {
             channel.write(buffer);
         } catch (IOException e) {

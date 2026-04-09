@@ -9,7 +9,7 @@ import java.util.concurrent.FutureTask;
 
 public class ChatClientTask extends FutureTask<Void> {
 
-    private ChatClient client;
+    private final ChatClient client;
 
     public static ChatClientTask create(ChatClient c, List<String> msgs, int wait) {
         return new ChatClientTask(c, msgs, wait);
