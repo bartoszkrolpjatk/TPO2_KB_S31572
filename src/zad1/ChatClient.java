@@ -25,6 +25,7 @@ public class ChatClient {
     private final SocketChannel channel;
     private final Selector selector;
     private final SelectionKey key;
+    private final BufferReader bufferReader;
 
     private Thread broadcastListener;
     private volatile boolean listeningToBroadcast = false;
@@ -39,6 +40,7 @@ public class ChatClient {
             selector = Selector.open();
             key = channel.register(selector, OP_WRITE);
             this.id = id;
+            this.bufferReader = new BufferReader();
         } catch (IOException e) {
             throw new SimpleChatException.ClientCannotConnect(e);
         }
@@ -73,7 +75,6 @@ public class ChatClient {
         if (broadcastListener != null)
             throw new SimpleChatException.ListeningToBroadcastFailed("Client %s is already listening to server broadcast!".formatted(this));
 
-        var readBuffer = ByteBuffer.allocate(1024);
         listeningToBroadcast = true;
         broadcastListener = new Thread(() -> {
             try {
@@ -84,21 +85,12 @@ public class ChatClient {
                         SelectionKey key = iterator.next();
                         iterator.remove();
                         if (key.isReadable()) {
-                            readBuffer.clear();
-                            int bytesRead = channel.read(readBuffer);
-
-                            if (bytesRead == -1) {
+                            BufferReader.ReadResult result = bufferReader.readFromChannel(channel);
+                            if (result.connectionClosed()) {
                                 listeningToBroadcast = false;
                                 continue;
                             }
-
-                            while (bytesRead > 1) {
-                                readBuffer.flip();
-                                var charBuffer = Charset.forName("Cp1250").decode(readBuffer);
-                                chatView.append(charBuffer);
-                                readBuffer.clear();
-                                bytesRead = channel.read(readBuffer);
-                            }
+                            chatView.append(result.data());
                         }
                     }
                 }
