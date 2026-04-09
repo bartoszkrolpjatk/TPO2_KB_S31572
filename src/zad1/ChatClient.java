@@ -49,8 +49,9 @@ public class ChatClient {
         }
     }
 
-    public void logout() {
+    public void logout() throws InterruptedException {
         send(LOGOUT_REQUEST.formatted(id));
+        Thread.sleep(50);
         broadcastListener.interrupt();
     }
 

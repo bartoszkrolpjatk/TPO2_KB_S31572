@@ -6,9 +6,9 @@ package zad1;
 
 import zad1.buffer.BufferService;
 import zad1.buffer.ReadResultDto;
-import zad1.exception.checked.ConnectionClosedException;
-import zad1.exception.checked.InvalidMessageFormatException;
 import zad1.exception.SimpleChatException;
+import zad1.exception.checked.ConnectionClosedException;
+import zad1.exception.checked.UserNotLoggedInException;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -17,11 +17,14 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.CharacterCodingException;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
 import static java.nio.channels.SelectionKey.OP_ACCEPT;
 import static java.nio.channels.SelectionKey.OP_READ;
-import static zad1.buffer.BufferService.asBuffer;
 import static zad1.CleaningUtils.closeChannelAndSelector;
+import static zad1.SessionValidator.validateUserLoggedIn;
+import static zad1.buffer.BufferService.asBuffer;
 
 public class ChatServer implements Runnable {//todo: zwracanie błędów klientom
 
@@ -72,22 +75,31 @@ public class ChatServer implements Runnable {//todo: zwracanie błędów kliento
                         SocketChannel channel = (SocketChannel) key.channel();
                         try {
                             for (ReadResultDto result : bufferService.readFromChannel(channel)) {
-                                System.out.print(result);
-                                switch (result.operation()) {
+                                var log = switch (result.operation()) {
                                     case HI -> {
-                                        //todo: login
+                                        String id = result.message().strip();
+                                        key.attach(new UserSessionDto(id));
+                                        yield getFormattedLog(id, "logged in\n");
                                     }
                                     case BYE -> {
-                                        //todo: logout
+                                        var session = (UserSessionDto) key.attachment();
+                                        validateUserLoggedIn(session, result);
+                                        session.forget();
+                                        yield getFormattedLog(session.id(), "logged out\n");
                                     }
                                     case SEND -> {
-                                        //todo: send
+                                        var session = (UserSessionDto) key.attachment();
+                                        validateUserLoggedIn(session, result);
+                                        yield getFormattedLog(session.id() + ":", result.message());
                                     }
-                                }
-                                //todo: aktualizuj serverLog
+                                };
+                                serverLog.append(log);
+                                //todo: broadcast
                             }
                         } catch (ConnectionClosedException e) {
                             //todo: wyloguj użytkownika
+                        } catch (UserNotLoggedInException e) {
+                            System.out.printf("Not logged in user was trying to send message: %s. Request not executed.%n", e.messageNotSent());
                         }
                     }
 
@@ -124,5 +136,10 @@ public class ChatServer implements Runnable {//todo: zwracanie błędów kliento
             var session = (UserSessionDto) key.attachment();
             session.addToOutputQueue(asBuffer(message));
         }
+    }
+
+    private String getFormattedLog(String id, String message) {//todo: wynieść do oddzielnej klasy
+        var formatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
+        return "%s %s %s".formatted(LocalTime.now().format(formatter), id, message);
     }
 }

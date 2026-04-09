@@ -23,7 +23,7 @@ public class BufferService {
     private final ByteBuffer buffer;
     private static final int BUFFER_CAPACITY = 1024;
     private static final CharsetDecoder decoder;
-    private static final CharsetEncoder encoder;
+    private static final CharsetEncoder encoder;//todo decoder i encoder nie mogą być współdzielone przez wątki
 
     public BufferService() {
         buffer = ByteBuffer.allocate(BUFFER_CAPACITY);
@@ -60,7 +60,7 @@ public class BufferService {
         var result = new ArrayList<ReadResultDto>();
         for (var rm : rawMessages) {
             try {
-                result.add(validateMessageFormat(data.toString()));
+                result.add(validateMessageFormat(rm + '\n')); //todo: naprawić usuwanie i dodawania znaku końca linii
             } catch (InvalidMessageFormatException e) {
                 System.err.printf("Wrong message format. Cause: %s. Skipping...\n", e.getMessage());
             }

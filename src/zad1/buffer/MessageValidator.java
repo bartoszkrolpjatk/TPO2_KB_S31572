@@ -7,7 +7,7 @@ import java.util.Optional;
 class MessageValidator {
 
     static ReadResultDto validateMessageFormat(String message) throws InvalidMessageFormatException {
-        var split = message.split(BufferService.DELIMITER);
+        var split = message.split(BufferService.DELIMITER, 2);
         if (split.length != 2)
             throw new InvalidMessageFormatException("Wrong format! For: '%s'. Expected ':' character. Expected format: <operation>:<message>".formatted(message));
 
