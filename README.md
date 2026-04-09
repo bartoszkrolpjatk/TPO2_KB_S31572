@@ -19,7 +19,10 @@ Klient wysyła do serwera jeden z powyższych komunikatów.
 Serwer następnie wysyła wszystkim podłączonym klientom komunikat o przeprowadzeniu powyższego komunikatu.
 
 ### Format komunikatów
- * logowanie -             `hi:<id>`
- * wylogowanie -           `bye:<id>`
- * wysłanie wiadomości -   `send:<message>`
- * zdarzenie -             `event:<message>`
+ * **Klient**
+   * logowanie: `hi:<id>\n`
+   * wylogowanie: `bye:<id>\n`
+   * wysłanie wiadomości: `send:<message>\n`
+ * **Serwer**
+   * zdarzenie: `broadcast:<message>\n`
+   * błąd: `error:<cause>\n`

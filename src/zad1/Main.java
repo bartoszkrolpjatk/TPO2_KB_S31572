@@ -43,8 +43,8 @@ public class Main {
         System.out.println("*** " + exc);
       }
     });
-//    es.shutdown();
-//    s.stopServer();
+    es.shutdown();
+    s.stopServer();
 
     System.out.println("\n=== Server log ===");
     System.out.println(s.getServerLog());

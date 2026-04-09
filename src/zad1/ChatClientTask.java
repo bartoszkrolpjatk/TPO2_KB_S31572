@@ -17,7 +17,12 @@ public class ChatClientTask extends FutureTask<Void> {
 
     private ChatClientTask(ChatClient client, List<String> messages, int wait) {
         super(() -> {
-            System.out.printf("Creating client task for %s%n", client);
+            client.login();
+            for (var msg : messages) {
+                client.send(msg);
+                Thread.sleep(wait);
+            }
+            client.logout();
             return null;
         });
         this.client = client;
