@@ -4,16 +4,15 @@
 
 package zad1;
 
-import zad1.buffer.BufferService;
 import zad1.exception.SimpleChatException;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
 import static java.nio.channels.SelectionKey.OP_READ;
+import static zad1.buffer.BufferUtils.asBuffer;
 
 public class ChatClient {
 
@@ -22,7 +21,6 @@ public class ChatClient {
 
     private final SocketChannel channel;
     private final Selector selector;
-    private final BufferService bufferService;
     private BroadcastListener broadcastListener;
 
     private static final String LOGIN_REQUEST = "hi:%s";
@@ -35,38 +33,29 @@ public class ChatClient {
             channel.configureBlocking(false);
             selector = Selector.open();
             this.id = id;
-            this.bufferService = new BufferService();
         } catch (IOException e) {
             throw new SimpleChatException.ClientCannotConnect(e);
         }
     }
 
-    public void login() {
-        try {
-            send(LOGIN_REQUEST.formatted(id));
-            channel.register(selector, OP_READ);
-            startListeningForBroadcast();
-        } catch (ClosedChannelException e) {
-            throw new SimpleChatException.ClientCannotConnect(e);
-        }
+    public void login() throws IOException {
+        send(LOGIN_REQUEST.formatted(id));
+        channel.register(selector, OP_READ);
+        startListeningForBroadcast();
     }
 
-    public void logout() throws InterruptedException {
+    public void logout() throws InterruptedException, IOException {
         send(LOGOUT_REQUEST.formatted(id));
         Thread.sleep(50);
         broadcastListener.interrupt();
     }
 
-    public void sendMessage(String message) {
+    public void sendMessage(String message) throws IOException {
         send(SEND_REQUEST.formatted(message));
     }
 
-    public void send(String req) {
-        try {
-            channel.write(bufferService.asBuffer(req + '\n'));
-        } catch (IOException e) {
-            throw new SimpleChatException.SendingMessageFailed(e);
-        }
+    public void send(String req) throws IOException {
+        channel.write(asBuffer(req + '\n'));
     }
 
     private void startListeningForBroadcast() {

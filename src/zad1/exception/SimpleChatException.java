@@ -28,19 +28,9 @@ public abstract class SimpleChatException extends RuntimeException {
         }
     }
 
-    public static class SendingMessageFailed extends SimpleChatException {
-        public SendingMessageFailed(Throwable cause) {
-            super("Exception while sending message! %s".formatted(cause.getMessage()), cause);
-        }
-    }
-
     public static class ListeningToBroadcastFailed extends SimpleChatException {
         public ListeningToBroadcastFailed(String message) {
             super(message);
-        }
-
-        public ListeningToBroadcastFailed(String message, Throwable cause) {
-            super(message, cause);
         }
     }
 

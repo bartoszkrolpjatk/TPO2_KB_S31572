@@ -1,10 +1,7 @@
 package zad1;
 
-import zad1.buffer.BufferService;
-import zad1.buffer.ReadResultDto;
-import zad1.exception.checked.ConnectionClosedException;
-import zad1.exception.checked.InvalidMessageFormatException;
 import zad1.exception.SimpleChatException;
+import zad1.exception.checked.ConnectionClosedException;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
@@ -12,10 +9,10 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
 import static zad1.CleaningUtils.closeChannelAndSelector;
+import static zad1.buffer.BufferUtils.readFromChannel;
 
 public class BroadcastListener implements Runnable {
 
-    private final BufferService bufferService;
     private final SocketChannel channel;
     private final Selector selector;
     private final StringBuilder chatView;
@@ -24,7 +21,6 @@ public class BroadcastListener implements Runnable {
 
     public BroadcastListener(SocketChannel channel, Selector selector, StringBuilder chatView) {
         this.channel = channel;
-        this.bufferService = new BufferService();
         this.selector = selector;
         this.chatView = chatView;
         this.listeningToBroadcast = false;
@@ -41,7 +37,7 @@ public class BroadcastListener implements Runnable {
                     SelectionKey key = iterator.next();
                     iterator.remove();
                     if (key.isReadable()) {
-                        bufferService.readFromChannel(channel)
+                        readFromChannel(channel)
                                 .forEach(r -> chatView.append(r.message()));
                     }
                 }

@@ -10,7 +10,7 @@ class MessageValidator {
         if (message.isBlank())
             throw new InvalidMessageFormatException("Empty message!", message);
 
-        var split = message.split(BufferService.DELIMITER, 2);
+        var split = message.split(BufferUtils.DELIMITER, 2);
         if (split.length != 2)
             throw new InvalidMessageFormatException("Expected ':' character. Expected format: <operation>:<message>", message);
 

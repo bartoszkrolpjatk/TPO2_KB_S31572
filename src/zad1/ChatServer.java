@@ -4,7 +4,6 @@
 
 package zad1;
 
-import zad1.buffer.BufferService;
 import zad1.buffer.ReadResultDto;
 import zad1.exception.SimpleChatException;
 import zad1.exception.checked.ConnectionClosedException;
@@ -16,7 +15,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.CharacterCodingException;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
@@ -24,13 +22,15 @@ import static java.nio.channels.SelectionKey.OP_ACCEPT;
 import static java.nio.channels.SelectionKey.OP_READ;
 import static zad1.CleaningUtils.closeChannelAndSelector;
 import static zad1.SessionValidator.validateUserLoggedIn;
+import static zad1.buffer.BufferUtils.asBuffer;
+import static zad1.buffer.BufferUtils.readFromChannel;
 
-public class ChatServer implements Runnable {//todo: zwracanie błędów klientom
+//todo: zwracanie błędów klientom
+public class ChatServer implements Runnable {
 
     private final ServerSocketChannel serverChannel;
     private final Selector selector;
     private final Thread thread;
-    private final BufferService bufferService;
     private final StringBuilder serverLog;
     private volatile boolean serverRunning = false;
 
@@ -42,7 +42,6 @@ public class ChatServer implements Runnable {//todo: zwracanie błędów kliento
             selector = Selector.open();
             serverChannel.register(selector, OP_ACCEPT);
             thread = new Thread(this);
-            bufferService = new BufferService();
             serverLog = new StringBuilder();
         } catch (IOException e) {
             throw new SimpleChatException.ServerStartFailed(e);
@@ -73,7 +72,7 @@ public class ChatServer implements Runnable {//todo: zwracanie błędów kliento
                     if (key.isReadable()) {
                         SocketChannel channel = (SocketChannel) key.channel();
                         try {
-                            for (ReadResultDto result : bufferService.readFromChannel(channel)) {
+                            for (ReadResultDto result : readFromChannel(channel)) {
                                 var log = switch (result.operation()) {
                                     case HI -> {
                                         String id = result.message().strip();
@@ -128,12 +127,12 @@ public class ChatServer implements Runnable {//todo: zwracanie błędów kliento
         return serverLog.toString();
     }
 
-    private void broadcast(String message) throws CharacterCodingException {
+    private void broadcast(String message) {
         var iterator = selector.keys().iterator();
         while (iterator.hasNext()) {
             SelectionKey key = iterator.next();
             var session = (UserSessionDto) key.attachment();
-            session.addToOutputQueue(bufferService.asBuffer(message));
+            session.addToOutputQueue(asBuffer(message));
         }
     }
 
