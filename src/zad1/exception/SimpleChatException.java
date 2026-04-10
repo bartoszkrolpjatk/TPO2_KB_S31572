@@ -39,4 +39,10 @@ public abstract class SimpleChatException extends RuntimeException {
             super("Exception while closing channel and selector %s".formatted(cause.getMessage()), cause);
         }
     }
+
+    public static class UnexpectedOperationException extends SimpleChatException {
+        public UnexpectedOperationException(String message) {
+            super(message);
+        }
+    }
 }

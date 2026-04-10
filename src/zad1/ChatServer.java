@@ -4,6 +4,7 @@
 
 package zad1;
 
+import zad1.buffer.Operation;
 import zad1.buffer.ReadResultDto;
 import zad1.exception.SimpleChatException;
 import zad1.exception.checked.ConnectionClosedException;
@@ -11,15 +12,15 @@ import zad1.exception.checked.UserNotLoggedInException;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 
 import static java.nio.channels.SelectionKey.OP_ACCEPT;
 import static java.nio.channels.SelectionKey.OP_READ;
+import static java.nio.channels.SelectionKey.OP_WRITE;
 import static zad1.CleaningUtils.closeChannelAndSelector;
 import static zad1.SessionValidator.validateUserLoggedIn;
 import static zad1.buffer.BufferUtils.asBuffer;
@@ -73,26 +74,31 @@ public class ChatServer implements Runnable {
                         SocketChannel channel = (SocketChannel) key.channel();
                         try {
                             for (ReadResultDto result : readFromChannel(channel)) {
-                                var log = switch (result.operation()) {
+                                Messages messages = switch (result.operation()) {
                                     case HI -> {
                                         String id = result.message().strip();
                                         key.attach(new UserSessionDto(id));
-                                        yield getFormattedLog(id, "logged in\n");
+                                        yield new Messages(id, "logged in\n");
                                     }
                                     case BYE -> {
                                         var session = (UserSessionDto) key.attachment();
                                         validateUserLoggedIn(session, result);
-                                        session.forget();
-                                        yield getFormattedLog(session.id(), "logged out\n");
+                                        yield new Messages(session.id(), "logged out\n");
                                     }
                                     case SEND -> {
                                         var session = (UserSessionDto) key.attachment();
                                         validateUserLoggedIn(session, result);
-                                        yield getFormattedLog(session.id() + ":", result.message());
+                                        yield new Messages(session.id() + ":", result.message());
                                     }
+                                    case EVENT -> throw new SimpleChatException.UnexpectedOperationException("Client cannot broadcast messages!");
                                 };
-                                serverLog.append(log);
-                                //todo: broadcast
+                                serverLog.append(messages.serverLog());
+                                broadcast(messages.broadcastMessage());
+
+                                if (result.operation() == Operation.BYE) {
+                                    var session = (UserSessionDto) key.attachment();
+                                    session.forget();
+                                }
                             }
                         } catch (ConnectionClosedException e) {
                             //todo: wyloguj użytkownika
@@ -102,7 +108,15 @@ public class ChatServer implements Runnable {
                     }
 
                     if (key.isWritable()) {
+                        SocketChannel channel = (SocketChannel) key.channel();
+                        UserSessionDto session = (UserSessionDto) key.attachment();
 
+                        ByteBuffer broadcastMessage;
+                        while ((broadcastMessage = session.poll()) != null) {
+                            channel.write(broadcastMessage);
+                        }
+
+                        key.interestOps(key.interestOps() & ~OP_WRITE);
                     }
                 }
             }
@@ -116,11 +130,13 @@ public class ChatServer implements Runnable {
     public void startServer() {
         serverRunning = true;
         thread.start();
+        System.out.println("Server started");
     }
 
     public void stopServer() {
         serverRunning = false;
         selector.wakeup();
+        System.out.println("Server stopped");
     }
 
     public String getServerLog() {
@@ -128,16 +144,12 @@ public class ChatServer implements Runnable {
     }
 
     private void broadcast(String message) {
-        var iterator = selector.keys().iterator();
-        while (iterator.hasNext()) {
-            SelectionKey key = iterator.next();
+        for (SelectionKey key : selector.keys()) {
             var session = (UserSessionDto) key.attachment();
-            session.addToOutputQueue(asBuffer(message));
-        }
-    }
+            if (session == null || session.halfClosed()) continue;
 
-    private String getFormattedLog(String id, String message) {//todo: wynieść do oddzielnej klasy
-        var formatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
-        return "%s %s %s".formatted(LocalTime.now().format(formatter), id, message);
+            session.addToOutputQueue(asBuffer("event:%s".formatted(message)));
+            key.interestOps(key.interestOps() | OP_WRITE);
+        }
     }
 }

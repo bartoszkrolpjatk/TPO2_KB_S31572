@@ -8,6 +8,7 @@ import zad1.exception.SimpleChatException;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
@@ -17,9 +18,10 @@ import static zad1.buffer.BufferUtils.asBuffer;
 public class ChatClient {
 
     private final String id;
-    private final StringBuilder chatView = new StringBuilder();
+    private final StringBuilder chatView;
 
     private final SocketChannel channel;
+    private SelectionKey selectionKey;
     private final Selector selector;
     private BroadcastListener broadcastListener;
 
@@ -33,6 +35,7 @@ public class ChatClient {
             channel.configureBlocking(false);
             selector = Selector.open();
             this.id = id;
+            this.chatView = new StringBuilder("=== %s chat view\n".formatted(id));
         } catch (IOException e) {
             throw new SimpleChatException.ClientCannotConnect(e);
         }
@@ -40,7 +43,7 @@ public class ChatClient {
 
     public void login() throws IOException {
         send(LOGIN_REQUEST.formatted(id));
-        channel.register(selector, OP_READ);
+        selectionKey = channel.register(selector, OP_READ);
         startListeningForBroadcast();
     }
 

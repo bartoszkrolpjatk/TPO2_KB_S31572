@@ -6,7 +6,8 @@ import java.util.Optional;
 public enum Operation {
     HI,
     BYE,
-    SEND;
+    SEND,
+    EVENT;
 
     static Optional<Operation> map(String operation) {
         return Arrays.stream(Operation.values())

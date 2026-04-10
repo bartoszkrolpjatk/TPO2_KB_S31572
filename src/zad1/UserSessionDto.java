@@ -12,11 +12,13 @@ public class UserSessionDto {
 
     private final String id;
     private final Queue<ByteBuffer> outputQueue;
+    private boolean halfClosed;
 
     public UserSessionDto(String id) {
         this.id = id;
         this.outputQueue = new ArrayDeque<>();
         sessions.add(this);
+        this.halfClosed = false;
     }
 
     public void addToOutputQueue(ByteBuffer message) {
@@ -25,10 +27,19 @@ public class UserSessionDto {
 
     public void forget() {
         sessions.remove(this);
+        halfClosed = true;
+    }
+
+    public ByteBuffer poll() {
+        return outputQueue.poll();
     }
 
     public String id() {
         return id;
+    }
+
+    public boolean halfClosed() {
+        return halfClosed;
     }
 
     @Override
