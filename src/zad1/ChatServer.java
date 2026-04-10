@@ -24,7 +24,6 @@ import static java.nio.channels.SelectionKey.OP_ACCEPT;
 import static java.nio.channels.SelectionKey.OP_READ;
 import static zad1.CleaningUtils.closeChannelAndSelector;
 import static zad1.SessionValidator.validateUserLoggedIn;
-import static zad1.buffer.BufferService.asBuffer;
 
 public class ChatServer implements Runnable {//todo: zwracanie błędów klientom
 
@@ -134,7 +133,7 @@ public class ChatServer implements Runnable {//todo: zwracanie błędów kliento
         while (iterator.hasNext()) {
             SelectionKey key = iterator.next();
             var session = (UserSessionDto) key.attachment();
-            session.addToOutputQueue(asBuffer(message));
+            session.addToOutputQueue(bufferService.asBuffer(message));
         }
     }
 

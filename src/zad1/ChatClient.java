@@ -22,6 +22,7 @@ public class ChatClient {
 
     private final SocketChannel channel;
     private final Selector selector;
+    private final BufferService bufferService;
     private BroadcastListener broadcastListener;
 
     private static final String LOGIN_REQUEST = "hi:%s";
@@ -34,6 +35,7 @@ public class ChatClient {
             channel.configureBlocking(false);
             selector = Selector.open();
             this.id = id;
+            this.bufferService = new BufferService();
         } catch (IOException e) {
             throw new SimpleChatException.ClientCannotConnect(e);
         }
@@ -61,7 +63,7 @@ public class ChatClient {
 
     public void send(String req) {
         try {
-            channel.write(BufferService.asBuffer(req + '\n'));
+            channel.write(bufferService.asBuffer(req + '\n'));
         } catch (IOException e) {
             throw new SimpleChatException.SendingMessageFailed(e);
         }

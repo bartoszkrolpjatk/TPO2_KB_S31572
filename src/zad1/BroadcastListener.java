@@ -41,12 +41,8 @@ public class BroadcastListener implements Runnable {
                     SelectionKey key = iterator.next();
                     iterator.remove();
                     if (key.isReadable()) {
-                        try {
-                            bufferService.readFromChannel(channel)
-                                    .forEach(r -> chatView.append(r.message()));
-                        } catch (InvalidMessageFormatException e) {
-                            System.err.printf("[Client %s] Wrong message format. Cause: %s. Skipping...\n", this, e.getMessage());
-                        }
+                        bufferService.readFromChannel(channel)
+                                .forEach(r -> chatView.append(r.message()));
                     }
                 }
             }
