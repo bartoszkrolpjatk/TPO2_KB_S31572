@@ -9,7 +9,7 @@ import java.util.concurrent.FutureTask;
 
 public class ChatClientTask extends FutureTask<Void> {
 
-    private ChatClient client;
+    private final ChatClient client;
 
     public static ChatClientTask create(ChatClient c, List<String> msgs, int wait) {
         return new ChatClientTask(c, msgs, wait);
@@ -17,7 +17,12 @@ public class ChatClientTask extends FutureTask<Void> {
 
     private ChatClientTask(ChatClient client, List<String> messages, int wait) {
         super(() -> {
-            System.out.printf("Creating client task for %s%n", client);
+            client.login();
+            for (var msg : messages) {
+                client.sendMessage(msg);
+                Thread.sleep(wait);
+            }
+            client.logout();
             return null;
         });
         this.client = client;
